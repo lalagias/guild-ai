@@ -1,0 +1,40 @@
+---
+description: Guild-to-Cursor integration strategy and custom integration patterns
+alwaysApply: false
+globs: cursor-agents/**,**/cursor*,**/integration*
+---
+
+# Guild + Cursor Integration
+
+There are two paths to connecting Guild agents with Cursor's coding capabilities:
+
+## Path 1: Standalone Cursor SDK scripts (current)
+
+TypeScript scripts in `cursor-agents/` that use `@cursor/sdk` directly. These run outside Guild's runtime and prove the Cursor SDK patterns independently. Good for demos and local development.
+
+## Path 2: Guild custom integration wrapping Cursor's REST API (target)
+
+A Guild custom integration that proxies requests to Cursor's Cloud Agents REST API. This is the production path because:
+
+- Guild's runtime handles credential injection (CURSOR_API_KEY never reaches agent context).
+- No npm dependency issues -- it's HTTP proxying, not a library import.
+- Agents import Cursor tools like any other Guild service integration.
+- Webhooks can be configured for async agent completion notifications.
+
+See `docs/guild-custom-integrations.md` for the full custom integration spec.
+
+## When building Cursor SDK standalone scripts
+
+- Use `@cursor/sdk` ^1.0.7, Node >=22, TypeScript ^6.0.3, tsx for dev.
+- Always dispose agents in `finally` blocks or use `await using`.
+- Log `run.id` and `agent.agentId` immediately after `send()`.
+- Exit code 0 for finished, 1 for startup error (`CursorAgentError`), 2 for run error (`result.status === "error"`).
+- `CURSOR_API_KEY` is in `.env.local` at workspace root.
+
+## When designing Guild custom integrations
+
+- Define endpoints matching the target service's REST API.
+- Authentication type: API key for Cursor (injected via Guild credential vault).
+- Operation names become the tool names agents see -- keep them descriptive.
+- Endpoints can be defined from an OpenAPI spec if available.
+- Test endpoints interactively from the version's Test page before publishing.

@@ -1,0 +1,29 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Lock files (optional - uncomment if you want to track them)
+# package-lock.json
+# pnpm-lock.yaml
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+*.swp
+*.swo
+
+# Guild CLI managed
+**/guild.json
+
+# TypeScript build info
+*.tsbuildinfo

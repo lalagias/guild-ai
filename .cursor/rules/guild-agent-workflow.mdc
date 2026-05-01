@@ -1,0 +1,26 @@
+---
+description: Guild CLI workflow and SDK guardrails for local agent development
+alwaysApply: false
+globs: **/agent.ts,**/guild.json,**/package.json,**/tsconfig.json
+---
+
+# Guild Agent Workflow
+
+Use the Guild CLI for agent lifecycle operations:
+
+- Create or fork agents with `guild agent init`.
+- Clone existing agents with `guild agent clone`.
+- Pull remote changes with `guild agent pull`.
+- Test with `guild agent test --ephemeral` or `guild agent chat`.
+- Save and publish with `guild agent save` and `guild agent publish`.
+
+Do not hand-edit `guild.json`; it is managed by the Guild CLI.
+
+For SDK code:
+
+- Keep `agent.ts` at the agent repo root unless the CLI scaffold says otherwise.
+- Import core APIs from `@guildai/agents-sdk`.
+- Import service tools from `@guildai-services/*`.
+- Call tools through `task.tools.<toolName>(args)`.
+- Prefer small service tool sets via `pick(...)`.
+- Spread `guildTools` fully when included; do not `pick(...)` from `guildTools`.

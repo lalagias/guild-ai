@@ -1,0 +1,33 @@
+{
+  "name": "@guildai/dkountanis~documenter",
+  "version": "1.0.9",
+  "author": "Guild.ai",
+  "type": "module",
+  "exports": {
+    ".": "./dist/agent.compiled.js"
+  },
+  "scripts": {
+    "build": "tsc --build && babel ./dist/agent.js --out-dir ./dist --out-file-extension .compiled.js --plugins @guildai/babel-plugin-agent-compiler && node -e \"const fs=require('fs'); fs.mkdirSync('dist',{recursive:true}); for (const f of fs.readdirSync('.')) if (f.endsWith('.md')) fs.copyFileSync(f, 'dist/' + f);\"",
+    "clean": "tsc --build --clean && node -e \"const fs=require('fs'); for (const p of ['dist','node_modules','package-lock.json']) fs.rmSync(p,{recursive:true,force:true});\"",
+    "format": "prettier --log-level=warn --write *.ts *.json",
+    "format:check": "prettier --log-level=warn --check *.ts *.json"
+  },
+  "devDependencies": {
+    "@babel/cli": "^7.28.3",
+    "@guildai/babel-plugin-agent-compiler": "*",
+    "@trivago/prettier-plugin-sort-imports": "^5.2.2",
+    "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "@guildai/agents-sdk": "*",
+    "@guildai-services/guildai~experimental-coding": "*",
+    "@guildai-services/guildai~github": "*",
+    "@guildai/guildai~sys-experimental-coding": "*",
+    "zod": "^4.3.0"
+  },
+  "files": [
+    "./dist/**/*.js",
+    "./dist/**/*.d.ts",
+    "./dist/**/*.md"
+  ]
+}

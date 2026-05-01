@@ -1,0 +1,28 @@
+{
+  "name": "@guildai/dkountanis~pr-doc-impact",
+  "version": "1.0.2",
+  "author": "Guild.ai",
+  "type": "module",
+  "exports": {
+    ".": "./dist/agent.js"
+  },
+  "scripts": {
+    "build": "tsc --build && node -e \"const fs=require('fs'); fs.mkdirSync('dist',{recursive:true}); for (const f of fs.readdirSync('.')) if (f.endsWith('.md')) fs.copyFileSync(f, 'dist/' + f);\"",
+    "clean": "tsc --build --clean && node -e \"const fs=require('fs'); for (const p of ['dist','node_modules','package-lock.json']) fs.rmSync(p,{recursive:true,force:true});\"",
+    "format": "prettier --log-level warn --write .",
+    "format:check": "prettier --log-level warn --check ."
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "@guildai/agents-sdk": "*",
+    "@guildai-services/guildai~github": "*",
+    "zod": "^4.3.0"
+  },
+  "files": [
+    "./dist/**/*.js",
+    "./dist/**/*.d.ts",
+    "./dist/**/*.md"
+  ]
+}

@@ -1,0 +1,25 @@
+---
+description: Always consult Guild.ai strategic context before planning or implementing Guild agents
+alwaysApply: true
+---
+
+# Guild.ai Context Rule
+
+Before planning, building, testing, or prioritizing any Guild.ai agent or Guild-related workflow, read `guild_context.md` from the workspace root.
+
+Use that document as the source of truth for:
+
+- The strategic goal of the Guild.ai engagement.
+- Stakeholder context and communication style.
+- Agent backlog tiers and sequencing.
+- Multi-agent handoff requirements.
+- Token-cost and harness constraints.
+- Pricing and long-term positioning.
+
+When producing Guild agent plans:
+
+- Identify the agent tier.
+- Prefer connected workflows over isolated one-off agents.
+- Design outputs as structured inputs for another agent when possible.
+- Flag plans that need indexing, semantic search, credential handling, or MCP infrastructure as platform/harness work.
+- Keep 1-2 week agent builds separate from larger infrastructure initiatives.
