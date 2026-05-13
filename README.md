@@ -1,5 +1,7 @@
 # Guild Agent Skill
 
+[![skills.sh](https://skills.sh/b/lalagias/guild-agent-skill)](https://skills.sh/lalagias/guild-agent-skill)
+
 A [skills.sh](https://skills.sh) skill that helps AI coding assistants (Cursor, Claude Code, etc.) build agents for the [Guild.ai](https://guild.ai) platform.
 
 ## What This Skill Does
@@ -14,19 +16,13 @@ When installed, this skill enables your AI assistant to:
 
 ## Installation
 
-### For Cursor
-
 ```bash
 npx skills add lalagias/guild-agent-skill
 ```
 
-### For Claude Code
+Works with Cursor, Claude Code, Windsurf, and other AI coding agents.
 
-```bash
-npx skills add lalagias/guild-agent-skill
-```
-
-Or manually copy the skill files to your project's `.claude/skills/` or `.cursor/skills/` directory.
+Alternatively, manually copy the skill files to your project's `.claude/skills/` or `.cursor/skills/` directory.
 
 ## Contents
 
