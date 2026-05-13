@@ -1,0 +1,340 @@
+openapi: 3.1.0
+info:
+  title: OpenAI Responses API
+  description: Guild integration for OpenAI Responses API with hosted tools (web search, code interpreter, shell, MCP).
+  version: 1.0.0
+servers:
+  - url: https://api.openai.com
+    description: OpenAI API
+
+security:
+  - bearerAuth: []
+
+paths:
+  /v1/responses:
+    post:
+      operationId: openai_responses_create
+      summary: Create a response
+      description: |
+        Create a model response with optional tools (web search, code interpreter, shell, MCP, etc.).
+        Set background=true for async execution, then poll GET /v1/responses/{id} for completion.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateResponseRequest'
+      responses:
+        '200':
+          description: Response created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Response'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+        '429':
+          description: Rate limited
+
+  /v1/responses/{response_id}:
+    get:
+      operationId: openai_responses_get
+      summary: Get a response
+      description: Retrieve a response by ID. Use this to poll for completion when background=true.
+      parameters:
+        - name: response_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: The ID of the response to retrieve.
+      responses:
+        '200':
+          description: Response retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Response'
+        '404':
+          description: Response not found
+
+    delete:
+      operationId: openai_responses_delete
+      summary: Delete a response
+      description: Permanently delete a response.
+      parameters:
+        - name: response_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: The ID of the response to delete.
+      responses:
+        '200':
+          description: Response deleted successfully
+        '404':
+          description: Response not found
+
+  /v1/responses/{response_id}/cancel:
+    post:
+      operationId: openai_responses_cancel
+      summary: Cancel a response
+      description: Cancel an active response. Cannot be resumed after cancellation.
+      parameters:
+        - name: response_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: The ID of the response to cancel.
+      responses:
+        '200':
+          description: Response cancelled successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Response'
+        '404':
+          description: Response not found
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      description: OpenAI API key as Bearer token
+
+  schemas:
+    CreateResponseRequest:
+      type: object
+      required:
+        - model
+        - input
+      properties:
+        model:
+          type: string
+          description: Model ID (e.g., gpt-4o, gpt-4o-mini, gpt-5.5).
+          example: gpt-4o
+        input:
+          oneOf:
+            - type: string
+              description: Text input to the model.
+            - type: array
+              description: Array of input items (text, images, files).
+              items:
+                type: object
+          example: "Search the web for the latest AI news"
+        instructions:
+          oneOf:
+            - type: string
+              description: System/developer instructions.
+            - type: array
+              items:
+                type: object
+          example: "You are a helpful research assistant."
+        tools:
+          type: array
+          description: Tools to make available to the model.
+          items:
+            $ref: '#/components/schemas/Tool'
+        background:
+          type: boolean
+          description: If true, runs asynchronously. Poll GET for completion.
+          default: false
+        conversation:
+          type: string
+          description: Conversation ID for multi-turn context.
+        include:
+          type: array
+          description: Additional data to include in response.
+          items:
+            type: string
+          example: ["reasoning.encrypted_content"]
+
+    Tool:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          type: string
+          enum:
+            - web_search
+            - file_search
+            - code_interpreter
+            - shell
+            - mcp
+            - image_generation
+            - computer
+            - function
+          description: The type of tool.
+        search_context_size:
+          type: string
+          enum: [low, medium, high]
+          description: For web_search - amount of context to use.
+        user_location:
+          type: object
+          description: For web_search - user location for localized results.
+          properties:
+            country:
+              type: string
+            city:
+              type: string
+            region:
+              type: string
+            timezone:
+              type: string
+        vector_store_ids:
+          type: array
+          items:
+            type: string
+          description: For file_search - vector store IDs to search.
+        max_num_results:
+          type: integer
+          description: For file_search - max results to return.
+        container:
+          type: object
+          description: For code_interpreter - container configuration.
+          properties:
+            type:
+              type: string
+              enum: [auto]
+            file_ids:
+              type: array
+              items:
+                type: string
+            memory_limit:
+              type: string
+              enum: ["1g", "4g", "16g", "64g"]
+        environment:
+          type: object
+          description: For shell - environment configuration.
+          properties:
+            type:
+              type: string
+              enum: [container_auto, local]
+            memory_limit:
+              type: string
+              enum: ["1g", "4g", "16g", "64g"]
+        server_label:
+          type: string
+          description: For mcp - label for the MCP server.
+        server_url:
+          type: string
+          format: uri
+          description: For mcp - URL of the MCP server.
+        allowed_tools:
+          type: array
+          items:
+            type: string
+          description: For mcp - list of allowed tool names.
+        name:
+          type: string
+          description: For function - function name.
+        description:
+          type: string
+          description: For function - function description.
+        parameters:
+          type: object
+          description: For function - JSON schema for parameters.
+
+    Response:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Unique identifier for the response.
+        object:
+          type: string
+          enum: [response]
+        created_at:
+          type: integer
+          format: unix-time
+          description: Unix timestamp when created.
+        status:
+          type: string
+          enum: [in_progress, completed, incomplete, failed]
+          description: Current status of the response.
+        model:
+          type: string
+          description: Model used for the response.
+        output:
+          type: array
+          description: Output items from the model.
+          items:
+            $ref: '#/components/schemas/OutputItem'
+        usage:
+          $ref: '#/components/schemas/Usage'
+        error:
+          $ref: '#/components/schemas/ResponseError'
+        incomplete_details:
+          type: object
+          properties:
+            reason:
+              type: string
+              enum: [max_output_tokens, content_filter]
+
+    OutputItem:
+      type: object
+      properties:
+        type:
+          type: string
+          enum:
+            - message
+            - reasoning
+            - function_call
+            - function_call_output
+            - web_search_call
+            - file_search_call
+            - code_interpreter_call
+            - shell_call
+            - mcp_call
+            - image_generation_call
+            - computer_call
+        id:
+          type: string
+        role:
+          type: string
+          enum: [assistant, user, system, developer, tool]
+        content:
+          type: array
+          items:
+            type: object
+        status:
+          type: string
+          enum: [in_progress, completed, incomplete, failed]
+
+    Usage:
+      type: object
+      properties:
+        input_tokens:
+          type: integer
+        output_tokens:
+          type: integer
+        total_tokens:
+          type: integer
+
+    ResponseError:
+      type: object
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+            message:
+              type: string

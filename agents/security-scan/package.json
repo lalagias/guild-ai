@@ -1,6 +1,6 @@
 {
-  "name": "@guildai/dkountanis~cursor-cloud-coder",
-  "version": "1.0.13",
+  "name": "@guildai/dkountanis~security-scan",
+  "version": "1.0.2",
   "author": "Guild.ai",
   "type": "module",
   "exports": {
@@ -19,6 +19,7 @@
   },
   "dependencies": {
     "@guildai/agents-sdk": "*",
+    "@guildai-services/guildai~github": "*",
     "@guildai-services/dkountanis~cursor-cloud-agents": "*",
     "zod": "^4.3.0"
   },

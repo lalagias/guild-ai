@@ -1,6 +1,6 @@
 {
-  "name": "@guildai/dkountanis~cursor-cloud-coder",
-  "version": "1.0.13",
+  "name": "@guildai/dkountanis~openai-web-researcher",
+  "version": "1.0.1",
   "author": "Guild.ai",
   "type": "module",
   "exports": {
@@ -19,7 +19,7 @@
   },
   "dependencies": {
     "@guildai/agents-sdk": "*",
-    "@guildai-services/dkountanis~cursor-cloud-agents": "*",
+    "@guildai-services/dkountanis~openai-api": "*",
     "zod": "^4.3.0"
   },
   "files": [

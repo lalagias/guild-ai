@@ -32,6 +32,8 @@ Guild needs lighthouse use cases that prove the platform layer is worth paying f
 
 Therefore:
 
+
+
 - Single isolated agents are low leverage.
 - Connected multi-agent pipelines are high leverage because they demonstrate Guild's platform features.
 - The harness layer is the highest-leverage area: codebase indexing, semantic search, MCP catalog, credential vault, observability, and safe handoffs.
@@ -49,10 +51,14 @@ Bryce shared a scoring matrix of common dev workflow agents and recommended one 
 
 Current stance:
 
-- Documentation: yes, ship this week. Universal stale-docs pain, fast internal value for Guild.
-- Incident RCA: interested, but dependent on data access. If CloudWatch logs are already wired, difficulty is moderate; if building from scratch, it becomes infrastructure.
-- Security Scan + Auto-Remediation: pass on full auto-remediation for now. Risk scoring is feasible, but safe multi-file remediation needs a Cursor/Claude Code-style harness with indexing, semantic search, and safe edit loops.
-- Additional proposal: Issue Triage as a chained pipeline: triage agent generates plan, hands off to Cursor or another coding agent, PR draft appears, developer reviews in the morning.
+- Documentation: shipped. `documenter` and `pr-doc-impact` are live. Done.
+- Security Scan: in progress. Quiet PR risk scoring with optional Cursor remediation handoff for high-severity findings. Anti-CodeRabbit posture — stays silent on low-risk PRs.
+- Incident RCA: in progress. Uses the official `guildai~aws-cloudwatch` integration (v1.0.0). Runs real Logs Insights queries, correlates with recent PRs, produces ranked hypotheses. Graceful credential fallback to manual-input mode if CloudWatch isn't connected yet. Credential wiring is the one ask for Bryce.
+- Issue Triage + Routing: in progress. One agent that classifies and takes routing actions inline (labels, owner, comment, optional Cursor dispatch). Uses Linear and GitHub tools.
+- Test Generation: in progress. Standalone agent using Guild's experimental-coding container. Detects test framework, writes tests, runs them, opens draft PR.
+- Codex: dropped. App Server is local JSON-RPC stdio, not REST. SDK is npm-only (same Guild runtime blocker as @cursor/sdk). Set aside.
+- OpenAI Responses API: dropped. Out of scope.
+- Integration Hub additions: Firecrawl (dkountanis~firecrawl), v0.app (dkountanis~v0-app-api), and OpenRouter (dkountanis~openrouter) published and tested. Firecrawl and v0 unlock web-researcher and ui-prototyper agents. OpenRouter unlocks model-eval (multi-model comparison) and prompt-router (smart model selection) agents.
 
 Strategic external context: OpenAI released Symphony in April 2026, an open-source spec for orchestrating Codex agents from a Linear board. They are not productizing it. This validates Guild's category and leaves the multi-tracker, multi-model, production governance lane open.
 
@@ -245,11 +251,12 @@ For CEO/Christina:
 
 ## 11. Pending Work
 
-- Build and demo PR Explainer agent (Cursor SDK proof-of-concept).
-- Build and demo Issue Triage To Cursor agent (flagship pipeline).
-- Call with Bryce to scope RCA and issue triage in detail.
-- Send full backlog to Bryce when useful; include Cursor SDK angle.
-- Create or improve the documenter agent.
-- Build an owned PR doc-impact agent.
-- Draft a Symphony-style issue-to-workflow agent.
-- Prepare a strategic memo to the CEO proposing system-level engagement and retainer pricing, framing Guild as control plane over Cursor SDK execution.
+- Build and test issue-triage-router agent end-to-end on real GitHub and Linear issues.
+- Build and test test-generator agent against a real PR.
+- Build and test security-scan agent against PRs with real risk signals and no-risk baselines.
+- Build and test rca-incident-brief agent against sample CloudWatch alert; demo to Bryce with credential wiring ask.
+- Build opportunistic web-researcher (Firecrawl) and ui-prototyper (v0) agents.
+- Test model-eval and prompt-router agents end-to-end via OpenRouter integration.
+- Update docs/integration-hub-roadmap.md as integrations and agents ship.
+- Send Bryce consolidated update with sample runs and integration links.
+- Draft strategic memo to CEO proposing system-level engagement and retainer pricing.

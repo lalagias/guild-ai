@@ -1,0 +1,28 @@
+---
+description: Firecrawl credit safety rules. Apply when writing code that calls Firecrawl tools (firecrawl_scrape_and_extract_from_url, firecrawl_search_and_scrape, firecrawl_crawl_urls, firecrawl_scrape_and_extract_from_urls, firecrawl_parse_file).
+globs:
+  - agents/web-researcher/**
+  - agents/rca-incident-brief/**
+alwaysApply: true
+---
+
+# Firecrawl Credit Safety
+
+When writing code that calls Firecrawl tools:
+
+- Always pass `parsers: []` on `firecrawl_scrape_and_extract_from_url` unless PDF parsing is explicitly needed.
+- When PDF parsing IS needed, set `maxPages` (e.g., 20) to cap credit usage: `parsers: [{ type: "pdf", mode: "fast", maxPages: 20 }]`.
+- In search calls, pass `scrapeOptions: { parsers: [] }` to prevent PDF parsing on search results.
+- In crawl calls, pass `scrapeOptions: { parsers: [] }` and set a reasonable `limit` (not the default 10000).
+- Use `firecrawl_get_credit_usage` to monitor consumption in long-running agents.
+- Use `firecrawl_support_ask` for error diagnosis instead of blind retries.
+
+Credit costs:
+- Scrape: 1 credit per page
+- Search: 1 credit per 10 results (+ scrape credits if scrapeOptions includes formats)
+- Crawl: 1 credit per page crawled
+- Batch scrape: 1 credit per URL
+- PDF parsing: 1 credit PER PDF PAGE (`parsers: ["pdf"]`) vs 1 FLAT credit (`parsers: []`)
+- Map: 1 credit
+
+Reference: `.agents/skills/firecrawl-api/SKILL.md`

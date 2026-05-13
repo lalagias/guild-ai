@@ -1,0 +1,445 @@
+openapi: 3.0.3
+info:
+  title: skills.sh
+  version: 1.0.0
+  description: >
+    Programmatic access to the skills.sh skill catalog, leaderboard, and search.
+    Covers browsing all-time/trending/hot rankings, semantic search, curated first-party
+    skills, individual skill details with file trees, and security audit results from
+    multiple partners (Agent Trust Hub, Socket, Snyk, Runlayer, ZeroLeaks).
+
+servers:
+  - url: https://skills.sh
+
+security:
+  - BearerAuth: []
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      description: >
+        Optional API key issued on request. Unauthenticated requests are limited to
+        60 req/min per IP; authenticated requests get 600 req/min per key.
+
+  schemas:
+    V1Skill:
+      type: object
+      properties:
+        id:
+          type: string
+          description: 'Stable unique identifier. Format: "{source}/{slug}".'
+          example: vercel-labs/agent-skills/next-js-development
+        slug:
+          type: string
+          description: URL-safe skill slug.
+          example: next-js-development
+        name:
+          type: string
+          description: Human-readable name.
+          example: Next.js Development
+        source:
+          type: string
+          description: 'Source repository or provider. GitHub: "owner/repo". Well-known: "domain.com".'
+          example: vercel-labs/agent-skills
+        installs:
+          type: integer
+          description: Total deduplicated install count.
+          example: 24531
+        sourceType:
+          type: string
+          enum: [github, well-known]
+          description: '"github" for GitHub repos, "well-known" for /.well-known/ discovery sources.'
+        installUrl:
+          type: string
+          nullable: true
+          description: GitHub URL or well-known base URL for installing.
+          example: https://github.com/vercel-labs/agent-skills
+        url:
+          type: string
+          description: Direct link to the skill's page on skills.sh.
+          example: https://skills.sh/vercel-labs/agent-skills/next-js-development
+        isDuplicate:
+          type: boolean
+          description: Present and true if this skill is a detected fork/copy of another.
+      required: [id, slug, name, source, installs, sourceType, url]
+
+    V1SkillHot:
+      allOf:
+        - $ref: '#/components/schemas/V1Skill'
+        - type: object
+          properties:
+            installsYesterday:
+              type: integer
+              description: Installs during the same hour yesterday.
+            change:
+              type: integer
+              description: 'Difference: current hour installs minus yesterday.'
+
+    SkillDetail:
+      type: object
+      properties:
+        id:
+          type: string
+          example: vercel-labs/agent-skills/next-js-development
+        source:
+          type: string
+          example: vercel-labs/agent-skills
+        slug:
+          type: string
+          example: next-js-development
+        installs:
+          type: integer
+          example: 24531
+        hash:
+          type: string
+          nullable: true
+          description: SHA-256 hash of the skill's file contents. Use for cache invalidation.
+        files:
+          type: array
+          nullable: true
+          description: All files in the skill folder.
+          items:
+            type: object
+            properties:
+              path:
+                type: string
+                description: Relative filename.
+                example: SKILL.md
+              contents:
+                type: string
+                description: Full text contents.
+            required: [path, contents]
+      required: [id, source, slug, installs]
+
+    AuditEntry:
+      type: object
+      properties:
+        provider:
+          type: string
+          description: Partner display name.
+          example: Gen Agent Trust Hub
+        slug:
+          type: string
+          description: URL-safe partner slug.
+          example: agent-trust-hub
+        status:
+          type: string
+          enum: [pass, warn, fail]
+          description: 'Normalized verdict: "pass" (safe), "warn" (review recommended), "fail" (likely dangerous).'
+        summary:
+          type: string
+          description: One-line human-readable summary.
+          example: No risks detected
+        auditedAt:
+          type: string
+          format: date-time
+          description: ISO 8601 timestamp of when this audit was performed.
+        riskLevel:
+          type: string
+          enum: [NONE, LOW, MEDIUM, HIGH, CRITICAL]
+          description: Risk level label. Present for most partners.
+        categories:
+          type: array
+          items:
+            type: string
+          description: Detected categories. Only present for Agent Trust Hub.
+      required: [provider, slug, status, summary, auditedAt]
+
+    Pagination:
+      type: object
+      properties:
+        page:
+          type: integer
+        perPage:
+          type: integer
+        total:
+          type: integer
+        hasMore:
+          type: boolean
+      required: [page, perPage, total, hasMore]
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+      required: [error, message]
+
+paths:
+  /api/v1/skills:
+    get:
+      operationId: list_skills
+      summary: List skills from the leaderboard
+      description: >
+        Returns a paginated list of skills. Supports different views: all-time rankings,
+        trending (recent growth), and hot (comparing the last hour to the same hour yesterday).
+      parameters:
+        - name: view
+          in: query
+          schema:
+            type: string
+            enum: [all-time, trending, hot]
+            default: all-time
+          description: 'Leaderboard view: "all-time" (default), "trending", or "hot".'
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 0
+          description: Page number, 0-indexed.
+        - name: per_page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 500
+            default: 100
+          description: Results per page, 1-500.
+      responses:
+        '200':
+          description: Paginated skill list.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/V1Skill'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+        '400':
+          description: Invalid request parameters.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Rate limit exceeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/skills/search:
+    get:
+      operationId: search_skills
+      summary: Search skills by name or description
+      description: >
+        Search for skills by name, source, or description. Single-word queries use fuzzy
+        matching. Multi-word queries use semantic search for better relevance.
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema:
+            type: string
+            minLength: 2
+          description: Search query. Minimum 2 characters.
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 200
+            default: 50
+          description: Maximum results to return, 1-200.
+      responses:
+        '200':
+          description: Search results.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/V1Skill'
+                  query:
+                    type: string
+                  searchType:
+                    type: string
+                    enum: [fuzzy, semantic]
+                    description: '"fuzzy" for single-word queries, "semantic" for multi-word.'
+                  count:
+                    type: integer
+                  durationMs:
+                    type: integer
+        '400':
+          description: Invalid request parameters.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Rate limit exceeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/skills/curated:
+    get:
+      operationId: list_curated_skills
+      summary: Get the official curated set of first-party skills
+      description: >
+        Returns the official curated set of first-party skills — skills from companies
+        and organizations that build the technology the skill is about. Same dataset
+        shown at skills.sh/official.
+      responses:
+        '200':
+          description: Curated skill owners and their skills.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        owner:
+                          type: string
+                          example: vercel-labs
+                        totalInstalls:
+                          type: integer
+                          example: 89240
+                        featuredRepo:
+                          type: string
+                          example: agent-skills
+                        featuredSkill:
+                          type: string
+                          example: Next.js Development
+                        skills:
+                          type: array
+                          items:
+                            $ref: '#/components/schemas/V1Skill'
+                      required: [owner, totalInstalls, featuredRepo, featuredSkill, skills]
+                  totalOwners:
+                    type: integer
+                  totalSkills:
+                    type: integer
+                  generatedAt:
+                    type: string
+                    format: date-time
+        '429':
+          description: Rate limit exceeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/skills/{source_owner}/{source_repo}/{skill_slug}:
+    get:
+      operationId: get_skill
+      summary: Get detailed information about a single skill
+      description: >
+        Returns a skill's install count and full file tree (SKILL.md and any supporting
+        files). For GitHub skills the path is /{owner}/{repo}/{slug}. For well-known
+        skills the path is /{domain}/{slug}. Use the id field from any listing or search
+        response to construct this path.
+      parameters:
+        - name: source_owner
+          in: path
+          required: true
+          schema:
+            type: string
+          description: 'GitHub owner or well-known domain (e.g., "vercel-labs" or "mintlify.com").'
+        - name: source_repo
+          in: path
+          required: true
+          schema:
+            type: string
+          description: 'GitHub repo name or well-known skill name (e.g., "agent-skills" or "mintlify").'
+        - name: skill_slug
+          in: path
+          required: true
+          schema:
+            type: string
+          description: URL-safe skill slug (e.g., "next-js-development").
+      responses:
+        '200':
+          description: Skill detail with file tree.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SkillDetail'
+        '404':
+          description: Skill not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Rate limit exceeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/skills/audit/{source_owner}/{source_repo}/{skill_slug}:
+    get:
+      operationId: audit_skill
+      summary: Get security audit results for a skill
+      description: >
+        Returns security audit results from all available partners (Gen Agent Trust Hub,
+        Socket, Snyk, Runlayer, ZeroLeaks). Returns 404 if no partner has audited this
+        skill yet — audits are generated automatically after a skill is installed for
+        the first time (may take a few minutes).
+      parameters:
+        - name: source_owner
+          in: path
+          required: true
+          schema:
+            type: string
+          description: 'GitHub owner or well-known domain.'
+        - name: source_repo
+          in: path
+          required: true
+          schema:
+            type: string
+          description: 'GitHub repo name or well-known skill name.'
+        - name: skill_slug
+          in: path
+          required: true
+          schema:
+            type: string
+          description: URL-safe skill slug.
+      responses:
+        '200':
+          description: Audit results from all partners.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                  source:
+                    type: string
+                  slug:
+                    type: string
+                  audits:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/AuditEntry'
+                required: [id, source, slug, audits]
+        '404':
+          description: No audits exist for this skill yet.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Rate limit exceeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
