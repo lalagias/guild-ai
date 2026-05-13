@@ -1,0 +1,62 @@
+name: Check Guild Docs
+
+on:
+  schedule:
+    - cron: '0 9 * * 1'  # Every Monday at 9am UTC
+  workflow_dispatch:       # Manual trigger
+
+jobs:
+  check-docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Fetch current Guild docs index
+        run: curl -sf https://docs.guild.ai/llms.txt -o current-llms.txt
+
+      - name: Compare with snapshot
+        id: compare
+        run: |
+          if [ ! -f .guild-docs-snapshot.txt ]; then
+            echo "No snapshot found - creating initial snapshot"
+            cp current-llms.txt .guild-docs-snapshot.txt
+            echo "changed=initial" >> $GITHUB_OUTPUT
+          elif ! diff -q current-llms.txt .guild-docs-snapshot.txt > /dev/null 2>&1; then
+            echo "Guild docs have changed"
+            diff current-llms.txt .guild-docs-snapshot.txt || true
+            echo "changed=true" >> $GITHUB_OUTPUT
+          else
+            echo "No changes detected"
+            echo "changed=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create issue if docs changed
+        if: steps.compare.outputs.changed == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { data: issues } = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: 'docs-update'
+            });
+            if (issues.length === 0) {
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: 'Guild.ai docs have changed - skill may need updating',
+                body: 'The Guild.ai documentation index at https://docs.guild.ai/llms.txt has changed since the last snapshot.\n\nReview the changes and update affected skill files.\n\nRun the workflow manually after updating to refresh the snapshot.',
+                labels: ['docs-update']
+              });
+            }
+
+      - name: Update snapshot
+        if: steps.compare.outputs.changed == 'initial' || steps.compare.outputs.changed == 'true'
+        run: |
+          cp current-llms.txt .guild-docs-snapshot.txt
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add .guild-docs-snapshot.txt
+          git commit -m "Update Guild docs snapshot" || true
+          git push || true
