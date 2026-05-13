@@ -51,12 +51,12 @@ SKILL.md uses this frontmatter:
 
 ```yaml
 ---
-name: guild-agent-dev
+name: guild-agent-skills
 description: Build Guild.ai agents with AI assistance...
 license: MIT
 metadata:
   author: lalagias
-  version: "1.0.0"
+  version: "1.0.1"
 globs: ["**/agent.ts", "**/guild.json"]
 ---
 ```

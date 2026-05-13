@@ -1,10 +1,10 @@
 ---
-name: guild-agent-dev
+name: guild-agent-skills
 description: Build Guild.ai agents with AI assistance. Use when creating agent.ts files, running guild CLI commands, or working with @guildai/agents-sdk. Covers SDK patterns, CLI workflow, service integrations, and runtime constraints.
 license: MIT
 metadata:
   author: lalagias
-  version: "1.0.0"
+  version: "1.0.1"
 globs: ["**/agent.ts", "**/guild.json"]
 ---
 
