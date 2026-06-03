@@ -190,6 +190,7 @@ Action: Call firecrawl_start_agent with:
 Poll firecrawl_get_agent_status with the returned `id` until status is `completed` or `failed`. Report `creditsUsed` on completion.
 If the user says "cancel agent" or "stop agent", call firecrawl_cancel_agent with the job ID.
 Output: Return the agent's extracted data, formatted nicely. Report credits used.
+Scope guidance: /agent works best for single-page extraction or tightly-scoped tasks (one site, 2-3 steps). For broad cross-site discovery (e.g. "find 3 events across multiple calendars, then drill into each for speaker details"), /agent will exhaust its step budget. Use firecrawl_search_and_scrape + targeted firecrawl_scrape_and_extract_from_url calls instead — they are faster, cheaper, and more reliable for multi-site research.
 
 ### Browser Mode (Standalone Sessions)
 Trigger: user says "browser <url>", "open a browser", "browse to...", "run code on...", "start a browser session", or needs persistent browser interaction beyond scrape-interact.
@@ -203,6 +204,7 @@ Action:
 If the user says "list browsers" or "sessions", call firecrawl_list_browser_sessions.
 Output: Summarize each execution result (stdout/stderr). On session delete, report credits billed.
 Lifecycle rule: ALWAYS delete browser sessions when done. Sessions that aren't deleted keep running and consume credits until TTL expires.
+Tunnel URL guard: The browser session response may include an internal preview URL matching the pattern `fc-<hex>.ports.firecrawl.dev`. This is Firecrawl infrastructure for live-view streaming — it is NOT the page you navigated to and must never be used as a scrape target. To get the current page URL, run `page.url()` inside `firecrawl_execute_browser_code` and use the returned URL. If a session is deleted or expires, that tunnel hostname dies with it; any scrape against it will fail with a DNS error.
 
 ### Monitoring Mode
 Trigger: user says "queue", "queue status", "what's in the queue", "tokens", "token usage", "history", "credit history", or "usage history".
@@ -298,6 +300,8 @@ When a firecrawl_scrape_and_extract_from_url or firecrawl_search_and_scrape retu
 2. If the response includes fixParameters, retry the call with those parameters applied.
 3. If firecrawl_support_ask doesn't resolve it, try firecrawl_support_docs_search to look up the relevant API behavior or known limitations.
 4. If nothing works, log the issue and move on to the next source. Don't get stuck.
+5. SCRAPE_DNS_RESOLUTION_ERROR on a `fc-*.ports.firecrawl.dev` URL (or any `fc-<hex>.*` variant): this is an expired Firecrawl browser session tunnel — internal infrastructure that no longer exists. Stop immediately. Do NOT retry with alternative TLDs (.com, .org, .net, .io, .local, .test, etc.) — none of them will resolve. Go back to the actual target URL that you intended to scrape from the beginning.
+6. EMPTY_CONTENT with a Google Docs `export?format=txt` URL: set `onlyMainContent: false`. The readability extractor strips the thin HTML wrapper and produces zero-length markdown. This is not a scrape failure — retry with `onlyMainContent: false` and the content will appear.
 
 ## Search Operator Reference
 

@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Firecrawl Error Analysis — meetup-speaking-opps</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    background: #0f0f0f;
+    color: #e8e8e8;
+    padding: 40px 32px;
+    font-size: 14px;
+    line-height: 1.6;
+  }
+  @media print {
+    body { background: #fff; color: #111; padding: 24px; }
+    .no-print { display: none; }
+    .card { border-color: #ddd !important; }
+    .pill-danger { background: #fee2e2 !important; color: #991b1b !important; }
+    .pill-warning { background: #fef3c7 !important; color: #92400e !important; }
+    .pill-info { background: #dbeafe !important; color: #1e40af !important; }
+    .pill-success { background: #dcfce7 !important; color: #166534 !important; }
+    .pill-neutral { background: #f3f4f6 !important; color: #374151 !important; }
+    .callout-warning { background: #fffbeb !important; border-color: #fbbf24 !important; color: #111 !important; }
+    .callout-success { background: #f0fdf4 !important; border-color: #22c55e !important; color: #111 !important; }
+    .callout-info { background: #eff6ff !important; border-color: #3b82f6 !important; color: #111 !important; }
+    .stat-danger .stat-val { color: #dc2626 !important; }
+    .stat-warning .stat-val { color: #d97706 !important; }
+    code { background: #f3f4f6 !important; color: #111 !important; }
+    .section-heading { color: #111 !important; }
+    .muted { color: #555 !important; }
+    td, th { color: #111 !important; border-color: #ddd !important; }
+  }
+  .page { max-width: 900px; margin: 0 auto; }
+  h1 { font-size: 22px; font-weight: 700; letter-spacing: -0.3px; }
+  h2 { font-size: 16px; font-weight: 600; margin-bottom: 12px; }
+  h3 { font-size: 13px; font-weight: 600; }
+  .muted { color: #888; }
+  .section-heading { color: #e8e8e8; }
+
+  /* Grid */
+  .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media (max-width: 600px) { .grid-4, .grid-2 { grid-template-columns: 1fr 1fr; } }
+
+  /* Divider */
+  .divider { border: none; border-top: 1px solid #2a2a2a; margin: 8px 0; }
+  @media print { .divider { border-color: #ddd; } }
+
+  /* Stat */
+  .stat { background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 8px; padding: 14px 16px; }
+  .stat-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: #666; margin-bottom: 4px; }
+  .stat-val { font-size: 22px; font-weight: 700; }
+  .stat-danger .stat-val { color: #ef4444; }
+  .stat-warning .stat-val { color: #f59e0b; }
+  .stat-neutral .stat-val { color: #e8e8e8; }
+
+  /* Card */
+  .card { background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 8px; overflow: hidden; }
+  .card-header { padding: 14px 16px 10px; border-bottom: 1px solid #2a2a2a; font-weight: 600; font-size: 13px; }
+  .card-body { padding: 16px; }
+
+  /* Callout */
+  .callout { border-radius: 8px; padding: 12px 16px; font-size: 13px; }
+  .callout strong { display: block; margin-bottom: 4px; font-size: 13px; }
+  .callout-warning { background: #1f1800; border: 1px solid #7c5e00; color: #fde68a; }
+  .callout-success { background: #0a1f0f; border: 1px solid #166534; color: #86efac; }
+  .callout-info { background: #0d1b2a; border: 1px solid #1e3a5f; color: #93c5fd; }
+
+  /* Pills */
+  .pill { display: inline-block; font-size: 11px; font-weight: 600; border-radius: 4px; padding: 2px 7px; text-transform: uppercase; letter-spacing: 0.04em; }
+  .pill-danger { background: #3b0f0f; color: #f87171; }
+  .pill-warning { background: #2a1a00; color: #fbbf24; }
+  .pill-info { background: #0d1b2a; color: #60a5fa; }
+  .pill-success { background: #0a1f0f; color: #4ade80; }
+  .pill-neutral { background: #222; color: #aaa; }
+
+  /* Table */
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: #666; text-align: left; padding: 8px 12px; border-bottom: 1px solid #2a2a2a; }
+  td { padding: 10px 12px; border-bottom: 1px solid #1e1e1e; vertical-align: middle; }
+  tr.tone-danger td { background: rgba(239,68,68,0.05); }
+  tr.tone-warning td { background: rgba(245,158,11,0.05); }
+  code { background: #252525; color: #a5b4fc; padding: 2px 6px; border-radius: 4px; font-family: "JetBrains Mono", "Fira Code", monospace; font-size: 11px; }
+
+  /* Collapsible error sections */
+  .error-section { border: 1px solid #2a2a2a; border-radius: 8px; overflow: hidden; margin-bottom: 8px; }
+  .error-section-header { background: #161616; padding: 12px 16px; display: flex; align-items: center; gap: 10px; }
+  .error-section-body { padding: 16px; border-top: 1px solid #2a2a2a; }
+  .error-label { font-weight: 600; font-size: 13px; flex: 1; }
+  .detail-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: #666; margin-bottom: 4px; }
+  .detail-text { font-size: 13px; color: #bbb; line-height: 1.7; }
+  .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 14px; }
+  .mini-stat { background: #111; border: 1px solid #222; border-radius: 6px; padding: 10px 12px; }
+  .mini-stat .stat-label { font-size: 10px; }
+  .mini-stat .stat-val { font-size: 16px; }
+
+  /* Timeline */
+  .timeline-row { display: flex; align-items: flex-start; gap: 10px; padding: 5px 0; }
+  .timeline-time { font-size: 11px; color: #666; font-variant-numeric: tabular-nums; min-width: 58px; padding-top: 2px; }
+  .timeline-text { font-size: 12px; color: #ccc; }
+
+  /* Spacing utilities */
+  .stack > * + * { margin-top: 8px; }
+  .stack-lg > * + * { margin-top: 20px; }
+  .stack-xl > * + * { margin-top: 28px; }
+  .mt-4 { margin-top: 4px; }
+  .mt-8 { margin-top: 8px; }
+  .mt-12 { margin-top: 12px; }
+  .mt-16 { margin-top: 16px; }
+  .mt-24 { margin-top: 24px; }
+  .mb-8 { margin-bottom: 8px; }
+  .mb-12 { margin-bottom: 12px; }
+
+  /* Print hint */
+  .print-hint { font-size: 12px; color: #555; text-align: right; margin-bottom: 24px; }
+  .print-hint kbd { background: #222; border: 1px solid #444; border-radius: 3px; padding: 1px 5px; font-size: 11px; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <p class="print-hint no-print">To save as PDF: <kbd>Ctrl+P</kbd> (or <kbd>Cmd+P</kbd>) → <strong>Save as PDF</strong></p>
+
+  <!-- Header -->
+  <h1>Firecrawl Error Analysis</h1>
+  <p class="muted mt-4">meetup-speaking-opps &nbsp;·&nbsp; Jun 03, 2026 &nbsp;·&nbsp; Activity log audit</p>
+
+  <!-- Summary stats -->
+  <div class="grid-4 mt-24">
+    <div class="stat stat-danger">
+      <div class="stat-label">Total Failures</div>
+      <div class="stat-val">12</div>
+    </div>
+    <div class="stat stat-danger">
+      <div class="stat-label">High Severity</div>
+      <div class="stat-val">9</div>
+    </div>
+    <div class="stat stat-warning">
+      <div class="stat-label">Credits Wasted</div>
+      <div class="stat-val">45</div>
+    </div>
+    <div class="stat stat-neutral">
+      <div class="stat-label">Error Types</div>
+      <div class="stat-val">4</div>
+    </div>
+  </div>
+
+  <hr class="divider mt-24" />
+
+  <!-- Root cause callout -->
+  <div class="callout callout-warning mt-16">
+    <strong>Root Cause: Expired Browser Sandbox URL</strong>
+    The agent captured an ephemeral Firecrawl browser tunnel URL
+    (<code>fc-7554f4e18c064b3d91264cb3cd1ad55c.ports.firecrawl.dev</code>) and tried to scrape it as if it
+    were the actual target site — across 8 URL variations — after the browser session was destroyed.
+    This one bug accounts for 72% of failures and ~44 credits wasted. The /agent exhaustion and the
+    onlyMainContent scrape failure are separate, independent issues.
+  </div>
+
+  <!-- Error table -->
+  <h2 class="section-heading mt-24 mb-12">Error Breakdown</h2>
+  <div class="card">
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Error Type</th>
+          <th>Endpoint</th>
+          <th>Severity</th>
+          <th>Occurrences</th>
+          <th>Credits Lost</th>
+          <th>Window</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="tone-danger">
+          <td><strong>E-01</strong></td>
+          <td><code>DNS_RESOLUTION_ERROR</code></td>
+          <td><span class="pill pill-neutral">/scrape</span></td>
+          <td><span class="pill pill-danger">HIGH</span></td>
+          <td>8</td>
+          <td style="color:#ef4444">8</td>
+          <td class="muted" style="font-size:11px">8:28 PM → 9:14 PM</td>
+        </tr>
+        <tr class="tone-danger">
+          <td><strong>E-02</strong></td>
+          <td><code>AGENT_MAX_CREDITS_EXHAUSTED</code></td>
+          <td><span class="pill pill-neutral">/agent</span></td>
+          <td><span class="pill pill-danger">HIGH</span></td>
+          <td>1</td>
+          <td style="color:#ef4444">1</td>
+          <td class="muted" style="font-size:11px">8:38 PM</td>
+        </tr>
+        <tr class="tone-warning">
+          <td><strong>E-03</strong></td>
+          <td><code>BROWSER_SESSION_DESTROYED</code></td>
+          <td><span class="pill pill-neutral">/browser</span></td>
+          <td><span class="pill pill-warning">MEDIUM</span></td>
+          <td>2</td>
+          <td style="color:#f59e0b">35</td>
+          <td class="muted" style="font-size:11px">8:30 PM → 8:33 PM</td>
+        </tr>
+        <tr>
+          <td><strong>E-04</strong></td>
+          <td><code>EMPTY_CONTENT_ONLYMAIN</code></td>
+          <td><span class="pill pill-neutral">/scrape</span></td>
+          <td><span class="pill pill-info">LOW</span></td>
+          <td>1</td>
+          <td class="muted">1</td>
+          <td class="muted" style="font-size:11px">~8:29 PM</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Timeline -->
+  <div class="grid-2 mt-24">
+    <div>
+      <h2 class="section-heading mb-12">Session Timeline</h2>
+      <div class="card">
+        <div class="card-body stack">
+          <div class="timeline-row">
+            <span class="timeline-time">8:28 PM</span>
+            <span class="pill pill-danger">FAIL</span>
+            <span class="timeline-text">First DNS failure (.com variant)</span>
+          </div>
+          <div class="timeline-row">
+            <span class="timeline-time">8:29 PM</span>
+            <span class="pill pill-danger">FAIL</span>
+            <span class="timeline-text">5 more DNS failures (.org .net .test .local .io)</span>
+          </div>
+          <div class="timeline-row">
+            <span class="timeline-time">8:30 PM</span>
+            <span class="pill pill-warning">WARN</span>
+            <span class="timeline-text">Browser session 1 started — 17 credits</span>
+          </div>
+          <div class="timeline-row">
+            <span class="timeline-time">8:33 PM</span>
+            <span class="pill pill-warning">WARN</span>
+            <span class="timeline-text">Browser session 2 started — 18 credits</span>
+          </div>
+          <div class="timeline-row">
+            <span class="timeline-time">8:36 PM</span>
+            <span class="pill pill-success">OK</span>
+            <span class="timeline-text">/scrape luma.com/ai — Completed (1 credit)</span>
+          </div>
+          <div class="timeline-row">
+            <span class="timeline-time">8:38 PM</span>
+            <span class="pill pill-danger">FAIL</span>
+            <span class="timeline-text">/agent lu.ma/ai — Failed (max credits)</span>
+          </div>
+          <div class="timeline-row">
+            <span class="timeline-time">8:48 PM</span>
+            <span class="pill pill-success">OK</span>
+            <span class="timeline-text">5× /search lu.ma — All Completed (8 credits)</span>
+          </div>
+          <div class="timeline-row">
+            <span class="timeline-time">9:14 PM</span>
+            <span class="pill pill-danger">FAIL</span>
+            <span class="timeline-text">2 final DNS failures (.ports.firecrawl.dev)</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <h2 class="section-heading mb-12">Credit Breakdown</h2>
+      <div class="card">
+        <div class="card-body stack">
+          <div style="display:flex; justify-content:space-between; align-items:center; padding: 8px 0; border-bottom: 1px solid #222;">
+            <span style="font-size:13px">Browser sessions (E-03)</span>
+            <span style="font-weight:700; color:#f59e0b">35 credits</span>
+          </div>
+          <div style="display:flex; justify-content:space-between; align-items:center; padding: 8px 0; border-bottom: 1px solid #222;">
+            <span style="font-size:13px">DNS failures — 8 TLD variants (E-01)</span>
+            <span style="font-weight:700; color:#ef4444">8 credits</span>
+          </div>
+          <div style="display:flex; justify-content:space-between; align-items:center; padding: 8px 0; border-bottom: 1px solid #222;">
+            <span style="font-size:13px">/agent exhaustion (E-02)</span>
+            <span style="font-weight:700; color:#ef4444">1 credit</span>
+          </div>
+          <div style="display:flex; justify-content:space-between; align-items:center; padding: 8px 0;">
+            <span style="font-size:13px">onlyMainContent failure (E-04)</span>
+            <span style="font-weight:700; color:#888">1 credit</span>
+          </div>
+          <div style="display:flex; justify-content:space-between; align-items:center; padding: 10px 0 2px; border-top: 1px solid #444; margin-top: 4px;">
+            <span style="font-size:13px; font-weight:700;">Total wasted</span>
+            <span style="font-weight:700; font-size:18px; color:#ef4444">45 credits</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Detailed findings -->
+  <h2 class="section-heading mt-24 mb-12">Detailed Findings & Fixes</h2>
+
+  <!-- E-01 -->
+  <div class="error-section mb-8">
+    <div class="error-section-header">
+      <span class="error-label">E-01 · DNS RESOLUTION ERROR</span>
+      <span class="pill pill-danger">HIGH</span>
+      <span class="pill pill-neutral">/scrape</span>
+      <span class="muted" style="font-size:11px">8 failures · 8 credits</span>
+    </div>
+    <div class="error-section-body stack">
+      <div class="grid-3">
+        <div class="mini-stat stat-danger"><div class="stat-label">Occurrences</div><div class="stat-val" style="color:#ef4444">8</div></div>
+        <div class="mini-stat stat-warning"><div class="stat-label">Credits Lost</div><div class="stat-val" style="color:#f59e0b">8</div></div>
+        <div class="mini-stat"><div class="stat-label">Confidence</div><div class="stat-val" style="font-size:14px; color:#4ade80">High</div></div>
+      </div>
+      <div>
+        <div class="detail-label">Root Cause</div>
+        <p class="detail-text">The agent scraped its own Firecrawl browser sandbox tunnel URL. The <code>fc-&lt;hex&gt;.ports.firecrawl.dev</code> hostname is ephemeral — it only exists while the browser session is active. Once the session expired/was destroyed, the domain no longer resolved in DNS. The agent then tried every TLD variation (.com, .org, .net, .test, .local, .io) before escalating to the original .ports.firecrawl.dev URL.</p>
+      </div>
+      <div>
+        <div class="detail-label">Fix</div>
+        <div class="callout callout-info">Never scrape the <code>fc-&lt;hex&gt;</code> tunnel URL. This is a Firecrawl-internal preview host, not the actual target site. Track the real destination URL from the browser navigation history, not the sandbox tunnel address.</div>
+      </div>
+      <div>
+        <div class="detail-label">Affected URLs</div>
+        <div class="stack mt-4">
+          <code>http://fc-7554f4e18c064b3d91264cb3cd1ad55c.com</code>
+          <code>http://fc-7554f4e18c064b3d91264cb3cd1ad55c.org</code>
+          <code>http://fc-7554f4e18c064b3d91264cb3cd1ad55c.net</code>
+          <code>http://fc-7554f4e18c064b3d91264cb3cd1ad55c.test</code>
+          <code>http://fc-7554f4e18c064b3d91264cb3cd1ad55c.local</code>
+          <code>http://fc-7554f4e18c064b3d91264cb3cd1ad55c.io</code>
+          <code>http://fc-7554f4e18c064b3d91264cb3cd1ad55c.ports.firecrawl.dev</code>
+          <code>https://fc-7554f4e18c064b3d91264cb3cd1ad55c.ports.firecrawl.dev</code>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- E-02 -->
+  <div class="error-section mb-8">
+    <div class="error-section-header">
+      <span class="error-label">E-02 · AGENT MAX CREDITS EXHAUSTED</span>
+      <span class="pill pill-danger">HIGH</span>
+      <span class="pill pill-neutral">/agent</span>
+      <span class="muted" style="font-size:11px">1 failure · 1 credit</span>
+    </div>
+    <div class="error-section-body stack">
+      <div class="grid-3">
+        <div class="mini-stat stat-danger"><div class="stat-label">Occurrences</div><div class="stat-val" style="color:#ef4444">1</div></div>
+        <div class="mini-stat"><div class="stat-label">Credits Lost</div><div class="stat-val">1</div></div>
+        <div class="mini-stat"><div class="stat-label">Confidence</div><div class="stat-val" style="font-size:14px; color:#fbbf24">Medium</div></div>
+      </div>
+      <div>
+        <div class="detail-label">Root Cause</div>
+        <p class="detail-text">The /agent call was given a very broad multi-site research task: find 3 events across lu.ma/ai and multiple sub-calendars, then drill into each for CFP/speaker-application details. The FIRE-1 agent exhausted its internal step budget ("Agent reached max credits"). The /agent endpoint is optimized for single-page or tightly scoped tasks — not broad cross-site discovery.</p>
+      </div>
+      <div>
+        <div class="detail-label">Fix</div>
+        <div class="callout callout-info">Break into smaller tasks: /scrape https://lu.ma/ai first (returns ~2.7K chars of markdown with the calendar listing), then targeted /scrape or /extract calls per event page. Avoid /agent for multi-site, multi-step discovery.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- E-03 -->
+  <div class="error-section mb-8">
+    <div class="error-section-header">
+      <span class="error-label">E-03 · BROWSER SESSION DESTROYED</span>
+      <span class="pill pill-warning">MEDIUM</span>
+      <span class="pill pill-neutral">/browser</span>
+      <span class="muted" style="font-size:11px">2 sessions · 35 credits</span>
+    </div>
+    <div class="error-section-body stack">
+      <div class="grid-3">
+        <div class="mini-stat stat-warning"><div class="stat-label">Sessions</div><div class="stat-val" style="color:#f59e0b">2</div></div>
+        <div class="mini-stat stat-warning"><div class="stat-label">Credits Lost</div><div class="stat-val" style="color:#f59e0b">35</div></div>
+        <div class="mini-stat"><div class="stat-label">Confidence</div><div class="stat-val" style="font-size:14px; color:#4ade80">High</div></div>
+      </div>
+      <div>
+        <div class="detail-label">Root Cause</div>
+        <p class="detail-text">Two browser sessions (17 + 18 credits) were launched and destroyed without completing their task. These are the source of the <code>fc-7554f4e18c064b3d91264cb3cd1ad55c</code> tunnel URL. The sessions expired or were killed, and the agent then confused the destroyed tunnel hostname with the actual target site — triggering 8 DNS failures (E-01).</p>
+      </div>
+      <div>
+        <div class="detail-label">Fix</div>
+        <div class="callout callout-info">Keep browser sessions alive for the full duration of a task. If a session times out, restart from scratch with the real target URL — never attempt to reconnect to an expired tunnel hostname.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- E-04 -->
+  <div class="error-section">
+    <div class="error-section-header">
+      <span class="error-label">E-04 · EMPTY CONTENT — onlyMainContent STRIP</span>
+      <span class="pill pill-info">LOW</span>
+      <span class="pill pill-neutral">/scrape</span>
+      <span class="muted" style="font-size:11px">1 failure · 1 credit</span>
+    </div>
+    <div class="error-section-body stack">
+      <div class="grid-3">
+        <div class="mini-stat"><div class="stat-label">Occurrences</div><div class="stat-val">1</div></div>
+        <div class="mini-stat"><div class="stat-label">Credits Lost</div><div class="stat-val">1</div></div>
+        <div class="mini-stat"><div class="stat-label">Confidence</div><div class="stat-val" style="font-size:14px; color:#4ade80">High</div></div>
+      </div>
+      <div>
+        <div class="detail-label">Root Cause</div>
+        <p class="detail-text">A Google Docs <code>export?format=txt</code> URL returns the document body wrapped in a ~91-byte HTML envelope. With <code>onlyMainContent: true</code>, the readability extractor stripped the envelope and produced 0-length markdown — every engine was marked <em>isLongEnough: false</em> even though each returned HTTP 200.</p>
+      </div>
+      <div>
+        <div class="detail-label">Fix</div>
+        <div class="callout callout-info">Re-run with <code>onlyMainContent: false</code>. Verified to return ~9.8K chars of document text. Also set <code>parsePDF: false</code> and <code>waitFor: 0</code>.</div>
+      </div>
+      <div>
+        <div class="detail-label">Suggested Parameters</div>
+        <pre style="background:#111;border:1px solid #333;border-radius:6px;padding:12px;font-size:12px;color:#a5b4fc;font-family:'JetBrains Mono','Fira Code',monospace;overflow-x:auto;">{
+  "formats": ["markdown"],
+  "onlyMainContent": false,
+  "parsePDF": false,
+  "waitFor": 0
+}</pre>
+      </div>
+    </div>
+  </div>
+
+  <hr class="divider mt-24" />
+
+  <!-- Recommendations -->
+  <h2 class="section-heading mt-24 mb-12">Recommendations</h2>
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-header">Immediate fix (E-01, E-03)</div>
+      <div class="card-body">
+        <p class="detail-text">The agent must never use the <code>fc-{hex}</code> browser tunnel hostname as a scrape target. After a browser session navigates to a page, capture the real URL from the browser navigation history — not the sandbox tunnel address.</p>
+        <p class="detail-text mt-8">This alone will eliminate 72% of failures and stop the wasted credit spiral of TLD-guessing.</p>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header">Task scoping fix (E-02)</div>
+      <div class="card-body">
+        <p class="detail-text">Split the broad lu.ma research: one /scrape on https://lu.ma/ai to get the calendar listing, then targeted /scrape or /extract calls per event page. Avoid /agent for multi-site, multi-step discovery.</p>
+        <p class="detail-text mt-8">The 5 /search calls at 8:48 PM all completed successfully — that approach works and should be the primary pattern.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="callout callout-success mt-16">
+    <strong>Good news: the task did eventually complete</strong>
+    The Google Doc was updated at 11:07 AM despite the demo failures. The 5 /search calls at 8:48 PM all succeeded.
+    The agent recovered — but burned ~45 credits and ~40 minutes getting there. These fixes will make future runs complete on the first attempt.
+  </div>
+
+  <p class="muted mt-24" style="font-size:11px; text-align:center;">Firecrawl Error Report · meetup-speaking-opps · Jun 03, 2026 · Generated by Cursor</p>
+
+</div>
+</body>
+</html>
