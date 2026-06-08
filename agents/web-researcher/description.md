@@ -1,4 +1,4 @@
-A multi-turn web research toolkit with full Firecrawl v2 API coverage (32 tools).
+A one-shot web research toolkit with full Firecrawl v2 API coverage (32 tools).
 
 Works as both a full research analyst and a direct web tool. Ask a research
 question for a structured report, or use individual commands (scrape, search,

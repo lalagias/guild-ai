@@ -61,5 +61,5 @@ export default llmAgent({
     ...pick(userInterfaceTools, ["ui_notify"]),
   },
   systemPrompt,
-  mode: "multi-turn",
+  mode: "one-shot",
 });
